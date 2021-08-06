@@ -1,0 +1,9 @@
+pymssql
+pandas
+plotly
+dash-table
+dash-html-components
+dash-daq
+dash
+dash-bootstrap-components
+dash-core-components
