@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output
+from numpy.lib.function_base import select
 import plotly.express as px
 import warnings
 from datetime import date
@@ -40,22 +41,22 @@ app.layout = html.Div(
               Output('authorName1', 'options')],
               [Input('infoType1', 'value')])
 def fill_transactionDropdowns(typeCustomer_):
-    customers = readTable('CUSTOMERTBL')
+    customers = readFunc(all_table, data = ['CUSTOMERTBL'])
     if (typeCustomer_ == 'customerID'):
         customerOptions = [{'label': i, 'value': i}
                            for i in list(customers['customerID'])]
     else:
         customerOptions = [{'label': str(i) + " "+str(k) + "-->" + str(j), 'value': j} for i, j, k in zip(
             customers['customerName'], customers['customerID'], customers['customerSurname'])]
-    branchs = readTable('BRANCHTBL')
+    branchs = readFunc(all_table, data = ['BRANCHTBL'])
     branchsOptions = [{'label': j, 'value': i} for i, j in zip(
         list(branchs['branchID']), list(branchs['branchName']))]
 
-    author = readTable('authorTBL')
+    author = readFunc(all_table, data = ['authorTBL'])
     authorOptions = [{'label': j, 'value': i} for i, j in zip(
         list(author['authorID']), list(author['authorName']))]
 
-    transactions = readTable('transactionTBL')
+    transactions = readFunc(all_table, data = ['transactionTBL'])
     transactionsOptions = [{'label': i, 'value': i}
                            for i in transactions['transactionID']]
 
@@ -65,7 +66,7 @@ def fill_transactionDropdowns(typeCustomer_):
 @app.callback(Output('bookName1', 'options'),
               Input('authorName1', 'value'))
 def booknames_by_author(authorID_):
-    books = readTable('BookTBL')
+    books = readFunc(all_table, data = ['BookTBL'])
     books = books[books['authorID'] == authorID_]
     booksOptions = [{'label': j, 'value': i}
                     for i, j in zip(list(books['bookID']), list(books['bookName']))]
@@ -76,7 +77,7 @@ def booknames_by_author(authorID_):
 @app.callback(Output('authTran1', 'data'),
               Input('deleteTran1', 'value'))
 def latest_transactions(tranID_):
-    transactions = transactionList1()
+    transactions = readFunc(list_of_transactions)
     df = transactions[transactions['transactionID'] == tranID_]
     return df.to_dict('records')
 
@@ -101,7 +102,7 @@ def confirm_transaction(tranID_, click_):
               Input('tranQuantity1', 'value'),
               Input('price1', 'value')])
 def sales_transactions(click_, info1_, branch1_, bookName1_,  quantity_, price1_):
-    df = transactionList1()
+    df = readFunc(list_of_transactions)
     isTrue = BUTTONS['addTransaction'].isNew(click_)
     if isTrue:
         if ((info1_ == None) | (bookName1_ == None) | (branch1_ == None) | (quantity_ == None)):
@@ -129,15 +130,15 @@ def search_books(criteria_, info_, click_):
     isNew = BUTTONS['searchBook'].isNew(click_)
     if isNew:
         if ((info_ == None) & (criteria_ == None)):
-            df = tumKitaplar()
+            df = readFunc(query=all_books)
             return df.to_dict('records')
         elif criteria_ == "authorName":
-            df = searchByAuthor(str(info_))
+            df = readFunc(qery = search_by_author, data = (str(info_)))
             return df.to_dict('records')
         else:
-            df = search('BOOKTBL', str(criteria_), str(info_))
+            df = readFunc(query= 'search', data = (str(criteria_), str(info_)))
             return df.to_dict('records')
-    df = tumKitaplar()
+    df = readFunc(query = all_books)
     return df.to_dict('records')
 
 
@@ -146,15 +147,15 @@ def search_books(criteria_, info_, click_):
                Output('bookType2', 'options')],
               Input("hidden21", "value"))
 def fill_book_dropdowns(hidden21):
-    authors = readTable('AUTHORTBL')
+    authors = readFunc(all_table, data = ['AUTHORTBL'])
     authorOptions = [{'label': s, 'value': id}
                      for s, id in zip(authors['authorName'], authors['authorID'])]
 
-    publishers = readTable('publisherTBL')
+    publishers = readFunc(all_table, data = ['publisherTBL'])
     publisherOptions = [{'label': s, 'value': id} for s, id in zip(
         publishers['publisherName'], publishers['publisherID'])]
 
-    types_ = readTable('typeTBL')
+    types_ = readFunc(all_table, data = ['typeTBL'])
     typeOptions = [{'label': i, 'value': j}
                    for i, j in zip(types_['typeName'], types_['typeID'])]
 
@@ -191,17 +192,17 @@ def add_new_books(bookName_, authorID_, type_, publisherID_, click_):
                Output('newType2', 'options')],
               Input('hidden22', 'value'))
 def fill_book_dropdowns2(click):
-    book = readTable('bookTBL')
+    book = readFunc(all_table, data = ['bookTBL'])
     bookOpt = [{'label': i, 'value': i} for i in book['bookID']]
-    author = readTable('authorTBL')
+    author = readFunc(all_table, data = ['authorTBL'])
     authorOpt = [{'label': i, 'value': j}
                  for i, j in zip(author['authorName'], author['authorID'])]
 
-    publisher = readTable('publisherTBL')
+    publisher = readFunc(all_table, data = ['publisherTBL'])
     publisherOpt = [{'label': i, 'value': j} for i, j in zip(
         publisher['publisherName'], publisher['publisherID'])]
 
-    type_ = readTable('typeTBL')
+    type_ = readFunc(all_table, data = ['typeTBL'])
     typeOpt = [{'label': i, 'value': j}
                for i, j in zip(type_['typeName'], type_['typeID'])]
 
@@ -250,11 +251,11 @@ def update_books(CRUD_, bookID_, newName_, newAuthor_, newPublisher_, newType_, 
               [Input("hidden31", "value"),
               Input("criteria3", "value")])
 def fill_customer_dropdowns(hidden31, criteria3):
-    cities = readTable('cityTBL')
+    cities = readFunc(all_table, data = ['cityTBL'])
     citiesOpt = [{'label': s, 'value': id}
                  for s, id in zip(cities['cityName'], cities['cityID'])]
 
-    customers = readTable('customerTBL')
+    customers = readFunc(all_table, data = ['customerTBL'])
     customersOpt = [{'label': i, 'value': i} for i in customers[criteria3]]
     return citiesOpt, citiesOpt, customersOpt
 
@@ -268,22 +269,22 @@ def customer_search_tables(criteria_, info_, click_):
     isNew31 = BUTTONS['searchCustomer'].isNew(click_)
     if isNew31:
         if ((criteria_ == None) | (info_ == None)):
-            df = customerNullSearch3()
+            df = readFunc(query = customer_n_search)
         else:
-            df = customerSearch3(str(criteria_), info_)
+            df = readFunc(query = customer_search, data = (str(criteria_), info_))
         if df.shape[0] < 1:
             return df.to_dict('records'), None
-        transactions = customerTransactions3(df.loc[0, 'customerID'])
+        transactions = readFunc(customer_trans, data = [df.loc[0, 'customerID']])
         return df.to_dict('records'), transactions.to_dict('records')
-    df = customerNullSearch3()
-    transactions = customerTransactionsNull3()
+    df = readFunc(query = customer_n_search)
+    transactions = readFunc(query = cust_trans_search)
     return df.to_dict('records'), transactions.to_dict('records')
 
 
 @app.callback(Output('customerTown3', 'options'),
               Input('customerCity3', 'value'))
 def town_by_city(city_):
-    towns = readTable('TOWNTBL')
+    towns = readFunc(all_table, data = ['TOWNTBL'])
     townOptions = towns[towns['cityID'] == city_]
     options_ = [{'label': s, 'value': id} for s, id in zip(
         list(townOptions['townName']), list(townOptions['townID']))]
@@ -322,9 +323,9 @@ def add_new_customer(name_, surname_, town_, number_, click_):
               [Input('hidden33', 'value'),
                Input('newCity3', 'value')])
 def fill_update_customer(click, city_):
-    customer = readTable('customerTBL')
+    customer = readFunc(all_table, data = ['customerTBL'])
     customerID = [{'label': i, 'value': i} for i in customer['customerID']]
-    town = readTable('townTBL')
+    town = readFunc(all_table, data = ['townTBL'])
     town = town[town['cityID'] == city_]
     town = [{'label': j, 'value': i}
             for i, j in zip(town['townID'], town['townName'])]
@@ -374,23 +375,23 @@ def update_customer(CRUD_, customerID_, custName_, custSurname_, custTown_, cust
                Output('branchCity40', 'options')],
               Input("authorDelete4", "n_clicks"))
 def fill_other_dropdowns(hidden31):
-    author = readTable('authorTBL')
+    author = readFunc(all_table, data = ['authorTBL'])
     authorOpt = [{'label': j, 'value': i}
                  for i, j in zip(author['authorID'], author['authorName'])]
 
-    publisher = readTable('publisherTBL')
+    publisher = readFunc(all_table, data = ['publisherTBL'])
     publisherOpt = [{'label': j, 'value': i} for i, j in zip(
         publisher['publisherID'], publisher['publisherName'])]
 
-    type_ = readTable('typeTBL')
+    type_ = readFunc(all_table, data = ['typeTBL'])
     typeOpt = [{'label': j, 'value': i}
                for i, j in zip(type_['typeID'], type_['typeName'])]
 
-    branch = readTable('branchTBL')
+    branch = readFunc(all_table, data = ['branchTBL'])
     branchOpt = [{'label': j, 'value': i}
                  for i, j in zip(branch['branchID'], branch['branchName'])]
 
-    city = readTable('cityTBL')
+    city = readFunc(all_table, data = ['cityTBL'])
     cityOpt = [{'label': j, 'value': i}
                for i, j in zip(city['cityID'], city['cityName'])]
 
@@ -406,17 +407,18 @@ def fill_other_dropdowns(hidden31):
                Input('typeID4', 'value'),
                Input('branchID4', 'value')])
 def show_others_tables(authorID_, publisherID_, typeID_, branchID_):
-    author = readTable('authorTBL').sort_values(by='authorID', ascending=False)
+    author = readFunc(all_table, data = ['authorTBL']).sort_values(by='authorID', ascending=False)
+
     if authorID_:
         author = author[author['authorID'] == authorID_]
-    publisher = readTable('publisherTBL').sort_values(
+    publisher = readFunc(all_table, data = ['publisherTBL']).sort_values(
         by='publisherID', ascending=False)
     if publisherID_:
         publisher = publisher[publisher['publisherID'] == publisherID_]
-    type_ = readTable('typeTBL').sort_values(by='typeID', ascending=False)
+    type_ = readFunc(all_table, data = ['typeTBL']).sort_values(by='typeID', ascending=False)
     if typeID_:
         type_ = type_[type_['typeID'] == typeID_]
-    branch = readTable('branchTBL').sort_values(by='branchID', ascending=False)
+    branch = readFunc(all_table, data = ['branchTBL']).sort_values(by='branchID', ascending=False)
     if branchID_:
         branch = branch[branch['branchID'] == branchID_]
     return author.to_dict('records'), publisher.to_dict('records'), type_.to_dict('records'), branch.to_dict('records')
@@ -516,12 +518,12 @@ def update_others(authorDate40, newAuthor41, addAuthor42, newPublisher41, addPub
               Output('sunburstChoose5', 'options')],
               Input('interval-component5', 'n_clicks'))
 def counter_tables(click):
-    no1, no2, no3, no4, no5, no6 = totalNumbers()
+    numbs = totalCounts()
 
-    city = readTable('cityTBL')
+    city = readFunc(all_table, data = ['cityTBL'])
     cityOpt = [{'label': j, 'value': i}
                for i, j in zip(city['cityName'], city['cityName'])]
-    return no1, no2, no3, no4, no5, no6, cityOpt
+    return numbs['no1'], numbs['no2'], numbs['no3'], numbs['no4'], numbs['no5'], numbs['no6'], cityOpt
 
 
 @app.callback([Output('branchs5', 'figure'),
@@ -529,17 +531,17 @@ def counter_tables(click):
                Output('authorBar5', 'figure')],
               Input('sunburstChoose5', 'value'))
 def charts(city_):
-    branch_ = priceByBranch()
+    branch_ = readFunc(all_table, data = ['priceByBranch'])
     branch = px.bar(branch_, x='branchName', y='total price',
                     color='branchName', title="Total Earned Money By branchName (TOP 20)")
     branch.update_layout(paper_bgcolor='#FFF8EB')
 
-    sunBurst_ = branchC(city_)
+    sunBurst_ = readFunc(branch_table, data = [city_])
     sunBurst = px.sunburst(sunBurst_, path=[
                            'city', 'townName', '# of Branch'], values='# of Branch', title=f"# of the Branches in {city_}")
     sunBurst.update_layout(paper_bgcolor='#FFF8EB')
 
-    author_ = AuthorP()
+    author_ = readFunc(all_table, data = ['priceByAuthor'])
     author = px.bar(author_, x='authorName', y='total price',
                     color='authorName', title="Total Earned Money By Author (TOP 20)")
     author.update_layout(showlegend=False, paper_bgcolor='#FFF8EB')
